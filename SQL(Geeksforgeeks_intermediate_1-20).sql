@@ -187,17 +187,75 @@ FROM Sales
 GROUP BY sale_year, sale_month
 ORDER BY sale_year, sale_month;
 ----------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+--9. Retrieve Sales Details for Products with 'Smart' in Their Name
+SELECT s.sale_id, p.product_name, s.total_price
+FROM Sales AS s JOIN Products AS P ON s.product_id = p.product_id 
+WHERE p.product_name LIKE 'Smart%';
+----------------------------------------------------------------------------------------------------------------------------------------
+--10. Determine the average quantity sold for products with a unit price greater than $100.
+SELECT s.product_id, AVG(s.quantity_sold) AS average_quantity_sold FROM Sales AS s
+JOIN Products AS p ON s.product_id = p.product_id 
+WHERE p.unit_price > 100;
+---------------------------------------------------------------------------------------------------
+--11. Retrieve the product name and total sales revenue for each product.
+SELECT p.product_name, SUM(s.total_price) AS total_sales_revenue
+FROM Sales s
+JOIN Products p ON s.product_id = p.product_id
+GROUP BY p.product_name
+ORDER BY total_sales_revenue DESC;
+--------------------------------------------------------------------------------------------------------------------------------------------
+--12. List all sales along with the corresponding product names.
+SELECT s.sale_id, p.product_name
+FROM Sales AS s
+JOIN Products AS p
+ON s.product_id = p.product_id
+GROUP BY sale_id
+ORDER BY sale_id;
+------------------------------------------------------------------------------------------------------------------------------------------
+--13. Retrieve the product name and total sales revenue for each product. (Same question as 11)
+SELECT p.product_name, SUM(total_price) AS total_sales_revenue
+FROM Sales AS s
+JOIN Products AS p
+ON s.product_id = p.product_id
+GROUP BY product_name
+ORDER BY total_sales_revenue DESC;
+----------------------------------------------------------------------------------------------------------------------------------------
+--14. Rank products based on total sales revenue.
+SELECT 
+    p.product_name,
+    SUM(s.total_price) AS total_sales_revenue,
+    RANK() OVER (ORDER BY SUM(s.total_price) DESC) AS revenue_rank  --Handles ties (equal revenues get the same rank)
+FROM Sales s
+JOIN Products p ON s.product_id = p.product_id
+GROUP BY p.product_name;
+--or,
+SELECT 
+    p.product_name,
+    SUM(s.total_price) AS total_sales_revenue,
+    DENSE_RANK() OVER (ORDER BY SUM(s.total_price) DESC) AS revenue_rank --If two products tie for rank 1, the next rank will be 2 (not 3).
+FROM Sales s
+JOIN Products p ON s.product_id = p.product_id
+GROUP BY p.product_name;
+--or,
+SELECT 
+    p.product_name,
+    SUM(s.total_price) AS total_sales_revenue,
+    ROW_NUMBER() OVER (ORDER BY SUM(s.total_price) DESC) AS revenue_rank  --If two products have the same revenue, they’ll still get different ranks (1 and 2)
+FROM Sales s
+JOIN Products p ON s.product_id = p.product_id
+GROUP BY p.product_name;
+----------------------------------------------------------------------------------------------------------------------------------------
+--15. Calculate the running total revenue for each product category.
+SELECT
+    p.category,
+    s.sale_date,
+    SUM(s.total_price) AS daily_revenue,
+    SUM(SUM(s.total_price)) OVER (
+        PARTITION BY p.category
+        ORDER BY s.sale_date
+    ) AS running_total_revenue
+FROM Sales s
+JOIN Products p ON s.product_id = p.product_id
+GROUP BY p.category, s.sale_date
+ORDER BY p.category, s.sale_date;
+----------------------------------------------------------------------------------------------------------------------------------------
