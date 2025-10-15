@@ -165,10 +165,28 @@ FROM
     CategoryAverages
 WHERE
     avg_price = (SELECT MAX(avg_price) FROM CategoryAverages);
-
-
-
-
+------------------------------------------------------------------------------------------------------------------------------------------
+--7. Identify products with total sales exceeding 30.
+SELECT DISTINCT P.product_name
+FROM Products AS P
+JOIN Sales AS S ON P.product_id = S.product_id
+WHERE S.total_price > 30;
+--or,
+SELECT P.product_name
+FROM Products AS P
+JOIN Sales AS S ON P.product_id = S.product_id
+GROUP BY P.product_name
+HAVING SUM(S.total_price) > 30;
+------------------------------------------------------------------------------------------------------------------------------------------
+--8. Count the number of sales made in each month.
+SELECT 
+    strftime('%Y', sale_date) AS sale_year,
+    strftime('%m', sale_date) AS sale_month,
+    COUNT(*) AS total_sales
+FROM Sales
+GROUP BY sale_year, sale_month
+ORDER BY sale_year, sale_month;
+----------------------------------------------------------------------------------------------------------------------------------------
 
 
 
