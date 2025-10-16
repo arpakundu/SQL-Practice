@@ -315,3 +315,19 @@ SELECT
     JULIANDAY('now') - JULIANDAY(sale_date) AS days_difference
 FROM Sales;
 ----------------------------------------------------------------------------------------------------------------------------------------
+--20. Identify sales made during weekdays versus weekends.
+SELECT 
+    sale_id,
+    CASE 
+        WHEN DAYOFWEEK(sale_date) IN (1, 7) THEN 'Weekend'
+        ELSE 'Weekday'
+    END AS day_type
+FROM Sales;
+--or,
+SELECT 
+    sale_id,
+    CASE 
+        WHEN STRFTIME('%w', sale_date) IN ('0', '6') THEN 'Weekend'
+        ELSE 'Weekday'
+    END AS day_type
+FROM Sales;
