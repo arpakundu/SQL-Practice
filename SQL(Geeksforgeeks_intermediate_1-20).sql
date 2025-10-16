@@ -246,16 +246,72 @@ JOIN Products p ON s.product_id = p.product_id
 GROUP BY p.product_name;
 ----------------------------------------------------------------------------------------------------------------------------------------
 --15. Calculate the running total revenue for each product category.
-SELECT
+SELECT                                                    --True row-wise running total
     p.category,
+    p.product_name,
     s.sale_date,
-    SUM(s.total_price) AS daily_revenue,
-    SUM(SUM(s.total_price)) OVER (
-        PARTITION BY p.category
-        ORDER BY s.sale_date
+    SUM(s.total_price) OVER (
+        PARTITION BY p.category 
+        ORDER BY s.sale_date                              
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW   --optional line
     ) AS running_total_revenue
 FROM Sales s
-JOIN Products p ON s.product_id = p.product_id
-GROUP BY p.category, s.sale_date
+JOIN Products p ON s.product_id = p.product_id              
 ORDER BY p.category, s.sale_date;
+--or,
+SELECT p.category, p.product_name, s.sale_date,            --running total revenue for each product category (per date)
+       SUM(s.total_price) OVER (PARTITION BY p.category ORDER BY s.sale_date) AS running_total_revenue
+FROM Sales s
+JOIN Products p ON s.product_id = p.product_id;
+----------------------------------------------------------------------------------------------------------------------------------------
+--16. Categorize sales as "High", "Medium", or "Low" based on total price (e.g., > $200 is High, $100-$200 is Medium, < $100 is Low).
+SELECT sale_id,
+CASE
+WHEN total_price > 200 THEN 'High'
+WHEN total_price BETWEEN 100 AND 200 THEN 'Medium'
+ELSE 'Low'
+END AS sales_category
+FROM Sales;
+-------------------------------------------------------------------------------------------------------------------------------------------
+--17. Identify sales where the quantity sold is greater than the average quantity sold.
+SELECT sale_id, product_id, quantity_sold FROM Sales WHERE quantity_sold > (SELECT AVG(quantity_sold) FROM Sales);
+-------------------------------------------------------------------------------------------------------------------------------------------
+--18. Extract the month and year from the sale date and count the number of sales for each month.
+SELECT 
+    STRFTIME('%Y', sale_date) AS sale_year,
+    STRFTIME('%m', sale_date) AS sale_month,
+    COUNT(sale_id) AS total_sales_count
+FROM Sales 
+GROUP BY sale_year, sale_month
+ORDER BY sale_year, sale_month;
+--OR,
+SELECT 
+    YEAR(sale_date) AS sale_year,
+    MONTH(sale_date) AS sale_month,
+    COUNT(sale_id) AS total_sales_count
+FROM Sales 
+GROUP BY sale_year, sale_month
+ORDER BY sale_year, sale_month;
+--OR,
+SELECT 
+    CONCAT(YEAR(sale_date), '-', LPAD(MONTH(sale_date), 2, '0')) AS month,
+    COUNT(*) AS sales_count
+FROM Sales
+GROUP BY YEAR(sale_date), MONTH(sale_date);
+----------------------------------------------------------------------------------------------------------------------------------------
+--19. Calculate the number of days between the current date and the sale date for each sale.
+SELECT sale_id, DATEDIFF(NOW(), sale_date) AS days_since_sale
+FROM Sales;
+--or,
+SELECT 
+    sale_id,
+    sale_date,
+    DATEDIFF(CURDATE(), sale_date) AS days_difference
+FROM Sales;
+--or,
+SELECT 
+    sale_id,
+    sale_date,
+    JULIANDAY('now') - JULIANDAY(sale_date) AS days_difference
+FROM Sales;
 ----------------------------------------------------------------------------------------------------------------------------------------
